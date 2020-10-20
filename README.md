@@ -63,51 +63,79 @@ Projeto para mostrar o setup passo a passo de uma inicializacao de um projeto co
 
 **Configuracoes no tsconfig.json**
 
-- Passo 1: Para que quando jogar o codigo em producao nao va o codigo typescript e apenas o javascript precisamos configurar duas partes do nosso arquivo tsconfig.json, que sao: 
-```
+ - Passo 1: Para que quando jogar o codigo em producao nao va o codigo typescript e apenas o javascript precisamos configurar duas partes do nosso arquivo tsconfig.json, que sao: 
+ ```
   "outDir": "./dist",                        
   "rootDir": "./src", 
-```
-Passo 2: Depois tambem colocar a pasta dist que vai ficar o nosso codigo em producao no .gitignore. 
+ ```
+ - Passo 2: Depois tambem colocar a pasta dist que vai ficar o nosso codigo em producao no .gitignore. 
 
-Passo 3:Ainda no arquivo tsconfig.json vamos mudar o target do es5 para o es2017 para que o codigo em producao nao fique tao pesado com os novos recursos do es6.
-```
+ - Passo 3:Ainda no arquivo tsconfig.json vamos mudar o target do es5 para o es2017 para que o codigo em producao nao fique tao pesado com os novos recursos do es6.
+ ```
   "target": "es2017", 
-```
+ ```
 
-Passo 4: Devemos habilitar o allowJs, para que possa ser usado arquivos .js pois alguma bibliotecas nao entendem o typescript.
-```
+ - Passo 4: Devemos habilitar o allowJs, para que possa ser usado arquivos .js pois alguma bibliotecas nao entendem o typescript.
+ ```
   "allowJs": true,
-```
+ ```
 
-Passo 5: Incluir a lib do es6.
-```
+ - Passo 5: Incluir a lib do es6.
+ ```
   "lib": ["es6"],
-```
+ ```
 
-Passo 6: Devemos habilitar o removeComments para que ele remova os comentarios quando o codigo for para producao.
-```
+ - Passo 6: Devemos habilitar o removeComments para que ele remova os comentarios quando o codigo for para producao.
+ ```
   "removeComments": true,
-```
+ ```
 
-Passo 7: Devemos habiliatar os decorators para a utilizacao do TypeOrm ou qualquer orm que use decorators.
-```
+ - Passo 7: Devemos habiliatar os decorators para a utilizacao do TypeOrm ou qualquer orm que use decorators.
+ ```
   "experimentalDecorators": true,
   "emitDecoratorMetadata": true,
-```
+ ```
 
-Passo 8: Habilitar o typeRoots para conseguirmos sobrescrever alguma tipagem de uma lib
-```
+ - Passo 8: Habilitar o typeRoots para conseguirmos sobrescrever alguma tipagem de uma lib
+ ```
   "typeRoots": [
         "./node_modules/@types",
         "./src/@types"
       ], 
-```
+ ```
 
-Passo 9: Devemos adicionar: 
-```
+ - Passo 9: Devemos adicionar: 
+ ```
   "resolveJsonModule": true,
-```
+ ```
 
-Passo 10: Tirar todos os comentarios do arquivo para que fique facil utilizar:
+ - Passo 10: Tirar todos os comentarios do arquivo para que fique facil utilizar:
+
+**Configurando o ESlint**
+ - Passo 1: Devemos instalar o ESlint para seguirmos um padrao de codigo na nossa aplicacao e todos que utilizarem tambem usar o padrao de codigo:
+ ```
+  yarn add eslint -D
+ ```
+
+ - Passo 2: Devemos instalar o bootstrap do eslint as configuracoes de fato e o que desejamos que ele faca na nossa aplicacao para isso rodamos:
+ ```
+  yarn eslint --init
+ ```
+ Sera apresentado uma lista de perguntas para setar as configuracoes:
+  - Na primeira pergunta deve ser selecionada a terceira opcao
+  - Devemos selecionar a opcao de import/export se estiver utilizando no projeto
+  - Nesse projeto nao estamos utilizando o nem React e Vue.js, por isso selecionei a terceira opcao
+  - O projeto esta usando TypeScript, por isso selecionei YES
+  - Devemos selecionar que o projeto esta rodando no node
+  - Selecionar o guide popular
+  - Seleciono a opcao do standard
+  - Tipo do arquivo eslint vamos utilizar o json
+ 
+ No final sera aprensentado a opcao de instalar varias bibliotecas que o eslint selecionou para instalar com o npm, como nesse projeto estamos utilizando o yarn, seleciono o opcao NO, copio as bibliotecas menos a do eslint que ja foi instalado, e rodo no yarn com o yarn add -D.
+
+ - Passo 3: Devemos colocar uma configuracao no settings.json para que quando salvar o ESlint arrume o codigo:
+ ```
+ "eslint.codeActionsOnSave.mode": "all",
+ ```
+
 
