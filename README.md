@@ -59,6 +59,55 @@ Projeto para mostrar o setup passo a passo de uma inicializacao de um projeto co
   },
 ```
 
-- Passo 12: 
+- Passo 12: Por opcao ja dar um commit para ter um controle do que foi feito no setup e tambem para que se torne uma boa pratica sempre dar um commit quando configuracoes forem feitas ou criacoes de alguns servicos na aplicacao. Para isso devemos criar o arquivo .gitignore e colocar node_modules para que o arquivo nao va para o github por se tratar de um arquivo muito grande. 
 
+**Configuracoes no tsconfig.json**
+
+- Passo 1: Para que quando jogar o codigo em producao nao va o codigo typescript e apenas o javascript precisamos configurar duas partes do nosso arquivo tsconfig.json, que sao: 
+```
+  "outDir": "./dist",                        
+  "rootDir": "./src", 
+```
+Passo 2: Depois tambem colocar a pasta dist que vai ficar o nosso codigo em producao no .gitignore. 
+
+Passo 3:Ainda no arquivo tsconfig.json vamos mudar o target do es5 para o es2017 para que o codigo em producao nao fique tao pesado com os novos recursos do es6.
+```
+  "target": "es2017", 
+```
+
+Passo 4: Devemos habilitar o allowJs, para que possa ser usado arquivos .js pois alguma bibliotecas nao entendem o typescript.
+```
+  "allowJs": true,
+```
+
+Passo 5: Incluir a lib do es6.
+```
+  "lib": ["es6"],
+```
+
+Passo 6: Devemos habilitar o removeComments para que ele remova os comentarios quando o codigo for para producao.
+```
+  "removeComments": true,
+```
+
+Passo 7: Devemos habiliatar os decorators para a utilizacao do TypeOrm ou qualquer orm que use decorators.
+```
+  "experimentalDecorators": true,
+  "emitDecoratorMetadata": true,
+```
+
+Passo 8: Habilitar o typeRoots para conseguirmos sobrescrever alguma tipagem de uma lib
+```
+  "typeRoots": [
+        "./node_modules/@types",
+        "./src/@types"
+      ], 
+```
+
+Passo 9: Devemos adicionar: 
+```
+  "resolveJsonModule": true,
+```
+
+Passo 10: Tirar todos os comentarios do arquivo para que fique facil utilizar:
 
