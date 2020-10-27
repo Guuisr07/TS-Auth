@@ -1,141 +1,365 @@
-## Node setup
+## Api de autenticacao com Typescript 
 
-Projeto para mostrar o setup passo a passo de uma inicializacao de um projeto com node-js
+ - Configurar o express com a configuracao padrao. (Configuracao padrao ja existente no repositorio Node-setup do git 🚀)
 
-- Passo 1: Criamos a pasta com o nome do projeto.
+- Criar o arquivo de rotas dentro da pasta src, ficando assim: routes.ts
+  - O arquivo de rotas serve para armezenarmos as rotas que vamos criar para que sejam acessadas pelo cliente.
+  - Dentro do arquivo de rotas devemos importar o Router do express, ficando assim o codido ate entao da pasta routes.ts: 
+    ```
+      import { Router } from 'express';
+      const router = Router();
+      export default router;
+    ```
+  - Vamos importar o routes no arquivo server.ts e usar depois do app.use(express.json), pois o express roda os midlewares na ordem que sao deifnidos. 
 
-- Passo 2: Assim que criarmos rodamos um git init, para poder inicializar um repositorio local que depois sera colocado no github.
-```sh
-~ ❯ git init
-```
+**Configuracao do TypeORM**
+
+  Vamos usar o typeorm nesse projeto pois ele funciona muito bem com typescript, pode extrair o maximo da linguagem(superset).
+
+  - Comecar instalando o typeorm e o reflect-metadata, ficando assim o codigo:
+    ```sh
+    ❯ yarn add typeorm reflect-metadata
+    ```
+    - Depois de instalar as duas bibliotecas deve importar em algum arquivo global o reflect-metadata, ficando assim no arquivo server.ts no caso dessa minha aplicacao:
+      ```
+        import 'reflect-metadata'
+      ```
+
+  - Instalar a versao do banco de dados que vai usar no typeorm, no caso desse projeto irei utilizar o banco postgres, rodando:
+    ```sh
+    ❯  yarn add pg
+    ```
+
+  - Deve habilitar a parte dos decorators no tsconfig.json que sao os:
+    ```
+      "experimentalDecorators": true,        
+      "emitDecoratorMetadata": true,
+    ```
+  
+  - Criar o arquivo na raiz do projeto ormconfig.json para ser feita a configuracao do orm:
+    - Dentro do arquivo tem que ter uma configuracao para conexao com o banco no meu caso as configuracoes com o meu banco ficou assim:
+      ```
+      {
+        "type": "postgres",
+        "host": "localhost",
+        "port": 5432,
+        "username": "postgres",
+        "password": "1234",
+        "database": "postgres",
+        "entities": [
+          "src/app/models/*.ts"
+        ],
+        "migrations": [
+          "src/database/migrations/*.ts"
+        ],
+        "cli": {
+          "migrationsDir": "src/database/migrations"
+        } 
+      }
+      ```
+  
+   - Depois de colocar as configuracoes e preciso criar as pastas e os arquivo que foram colocados na configuracao, vamos comecar com a pasta app, que dentro dela vai o nosso models, para que sejam armezenados la as entidades do banco.
+
+   - Para armazenar as migrations vamos criar uma pasta com o nome de database e dentro dela a pasta migrations para armazenar as migrations.
+
+   - Vamos precisar usar a cli (Linha de comando) do typeorm para isso precisamos alterar o script e adicionar um novo script, para executar o typescript quando estivermos usando, ficando assim:
+      
+    "typeorm": "npx ts-node-dev ./node_modules/typeorm/cli.js"
 
 
-- Passo 3: Rodar o yarn init -y ou o npm init -y, para criar o nosso package.json, que serve para mostrar a versao dos pacotes que estamos utilizando, rodar a nossa aplicacao e alguma configuracaos que vao aparecer no decorrer do desenvolvimento da aplicacao.
-```sh
-~ ❯ yarn init -y
-```
+   - Precisamos dizer para cli em qual arquivo vamos criar as migrations, o codigo fica assim:
+    ```
+      "cli": {
+      "migrationsDir": "src/database/migrations"
+      }
+    ```
 
-- Passo 4: Instalar o typescript como dependencia de desenvolvimento, usar o typescript para projetos com node, devemos rodar yarn add typescript -D.
-```sh
-~ ❯ yarn add typescript -D
-```
+**Configurando a conexao com o banco de dados**
+  - Criar um arquivo na pasta database com o nome connect.ts
+  - A configuracao dentro do arquivo deve ficar assim:
+    ```
+      import { createConnection } from 'typeorm';
+      createConnection().then(() => console.log('Successfully connected with database'));
+    ```
 
-- Passo 5: Rodar o yarn tsc --init para criar o arquivo tsconfig.json, que serve para armazenar todas as configuracoes do typescript.
-```sh
-~ ❯ yarn tsc --init
-```
+  - Depois da configuracao devemos importar no arquivo raiz que e o server.ts o arquivo de conexao, ficando assim:
+    ```
+      import './database/connect';
+    ```
 
-- Passo 6: Criar a pasta src  para armezenar os codigos da aplicacao a ser criada. 
+**Criando a migration de usuario**
+  - Para criar uma migration precisamos rodar o seguinte comando:
+    ``` sh
+    ❯  yarn typeorm migration:create -n <Nome da tabela>
+    ```
 
-- Passo 7: Criar o arquivo server.ts que vai ser o servidor com o typescript.
+  - Dentro da migration criada deve existir as configuracoes para criacao de uma tabela e suas colunas no meu caso para esse projeto ficaram assim:
+  ```
+    import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
-- Passo 8: Adicionar o express para trabalharmos com rotas na aplicacao se estivermos construindo uma api, rodando o yarn add express, depois que instalar o express ele vai mostrar um erro aonde devemos adicionar as tipagens do express para typescript, rodando assim o yarn add @types/express -D (Como dependencia de desenvolvimento).
-```sh
-~ ❯ yarn add express @types/express -D
-```
+    export class CreateUsersTable1603416800249 implements MigrationInterface {
+      public async up(queryRunner: QueryRunner): Promise<void> {
+          // E necessario essa configuracao para que o auto-increment funcione na coluna id da tabela users.
+          await queryRunner.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
 
-- Passo 9: Devemos inciar a configuracao padrao do server.ts: 
-```
-  import express from 'express';
+          await queryRunner.createTable(new Table({
+            name: 'users', // Nome da Tabela
+            columns: [  // Para criar as colunas do banco
+                {
+                    name: 'id',     //Nome da coluna
+                    type: 'uuid',   //Tipo da coluna
+                    isPrimary: true,    // Declarando que e uma chave primaria
+                    generationStrategy: 'uuid', // Criando um auto increment
+                    default: 'uuid_generate_v4()',
+                },
+                {
+                    name: 'email',
+                    type: 'varchar',
+                    isUnique: true,
+                },
+                {
+                    name: 'password',
+                    type: 'varchar',
+                },
+            ]
+        }));
+      }
 
-  const app = express();
+      public async down(queryRunner: QueryRunner): Promise<void> {
+          await queryRunner.dropTable('users');
+          await queryRunner.query('DROP EXTENSION "uuid-ossp"')
+      }
+    }
+  ```
 
-  app.get('/', (request, response) => {
-    return response.json({ message: 'Hello World' })
-  })
+  - Para rodar a migration com o comando para criar no banco a tabela, devemos rodar o:
+  ```sh
+  ❯  yarn typeorm migration:run
+  ```
 
-  app.listen(3333);  
-```
+  - Assim que criamos nossa tabela precisamos criar o model dela para conseguir trabalhar com os dados e as configuracoes de cada tabela no banco.
 
-- Passo 10: Devemos instalar ts-node-dev, ele e a juncao do tsc (Que serve para transformar o codigo .ts em .js para que fique pronto para ser enviado pra producao), node (Que executa o codigo do server) e o nodemon (que fica observando o codigo para quando acontecer as alteracoes). para isso devemos rodar:
-```sh
-~ ❯ yarn add ts-node-dev -D
-```
+**Criando models**
+  - Devemos criar o arquivo com o nome da tabela, no meu caso so a de users.
+  - Precisamos trocar o arquivo para inicializacao com construtor no tsconfig.json ficando assim:
+    ```
+      "strictPropertyInitialization": false,
+    ```
+  
+  - Devemos importar o Entity do typeorm que e um decorator, uma funcao que executa outra funcao dentro do codigo.
+  - Para indicar qual que e a chave primaria da tabela precisamos importar a PrimaryGeneratedColumn.
+  - O model de usuarios ficara assim por enquanto:
+    - Usando o entity como decorator.
+    - PrimaryGeneratedColumn para mostrar qual que e a chave primaria da tabela.
+    - E o Column para definir o resto das colunas da tabela.
+    O codigo fica assim:
+    ```
+      import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-- Passo 11: Para utilizarmos o ts-node-dev precisamos criar um script no package.json para que ele rode o server.ts da pasta src, o codigo fica assim:
-```
-  "scripts": {
-    "dev": "ts-node-dev --respawn --transpileOnly --ignore-watch node_modules src/server.ts"
-  },
-```
+      @Entity('users')
+      class User {
+        @PrimaryGeneratedColumn('uuid')
+        id: string;
 
-- Passo 12: Por opcao ja dar um commit para ter um controle do que foi feito no setup e tambem para que se torne uma boa pratica sempre dar um commit quando configuracoes forem feitas ou criacoes de alguns servicos na aplicacao. Para isso devemos criar o arquivo .gitignore e colocar node_modules para que o arquivo nao va para o github por se tratar de um arquivo muito grande. 
+        @Column()
+        email: string;
 
-**Configuracoes no tsconfig.json**
+        @Column()
+        password: string;
+      }
 
- - Passo 1: Para que quando jogar o codigo em producao nao va o codigo typescript e apenas o javascript precisamos configurar duas partes do nosso arquivo tsconfig.json, que sao: 
- ```
-  "outDir": "./dist",                        
-  "rootDir": "./src", 
- ```
- - Passo 2: Depois tambem colocar a pasta dist que vai ficar o nosso codigo em producao no .gitignore. 
+      export default User;
+    ```
 
- - Passo 3:Ainda no arquivo tsconfig.json vamos mudar o target do es5 para o es2017 para que o codigo em producao nao fique tao pesado com os novos recursos do es6.
- ```
-  "target": "es2017", 
- ```
+**Criando a rota de cadastro dos usuarios**
+  - Devemos criar a pasta controllers dentro da pasta app, que vao conter a logica de todas as rotas da tabela usuarios.
 
- - Passo 4: Devemos habilitar o allowJs, para que possa ser usado arquivos .js pois alguma bibliotecas nao entendem o typescript.
- ```
-  "allowJs": true,
- ```
+  - Criar o arquivo UserController.ts
+    Dentro do arquivo so vai conter o metodo store, para poder armazenar os dados que o cliente vai mandar para o servidor, que depois sera armazenado para o banco de dados.
 
- - Passo 5: Incluir a lib do es6.
- ```
-  "lib": ["es6"],
- ```
+    O codigo dentro do controller deve ficar assim por enquanto usando o metodo store:
+    ```
+      import { Request, Response } from 'express';
 
- - Passo 6: Devemos habilitar o removeComments para que ele remova os comentarios quando o codigo for para producao.
- ```
-  "removeComments": true,
- ```
+      class UserController {
+        store(req: Request, res: Response) {
+          return res.send('ok');
+        }
 
- - Passo 7: Devemos habiliatar os decorators para a utilizacao do TypeOrm ou qualquer orm que use decorators.
- ```
-  "experimentalDecorators": true,
-  "emitDecoratorMetadata": true,
- ```
+      }
 
- - Passo 8: Habilitar o typeRoots para conseguirmos sobrescrever alguma tipagem de uma lib
- ```
-  "typeRoots": [
-        "./node_modules/@types",
-        "./src/@types"
-      ], 
- ```
+      export default new UserController();
+    ```
+  
+  - Devemos importar o controller no arquivo de rotas, a importacao dentro do arquivo de rotas nesse casso deve ficar assim:
+  ```
+    import UserController from './app/controllers/UserController';
+  ```
 
- - Passo 9: Devemos adicionar: 
- ```
-  "resolveJsonModule": true,
- ```
+  - Apos a importacao do controller devemos criar a rota de cadastro que vai receber o metodo post, a criacao da rota ficara assim usando o controller que foi importado:
+  ```
+    router.post('/users', UserController.store);
+  ```
 
- - Passo 10: Tirar todos os comentarios do arquivo para que fique facil utilizar:
+  - Assim que for criada a rota devemos testar para ver se o funcionamento esta correto, usando o insomnia para as requisicoes req e rest da rota.
 
-**Configurando o ESlint**
- - Passo 1: Devemos instalar o ESlint para seguirmos um padrao de codigo na nossa aplicacao e todos que utilizarem tambem usar o padrao de codigo:
- ```
-  yarn add eslint -D
- ```
+  - Se a resposta do Insomnia for Ok devemos seguir para criacao de fato de um usuario na rota de cadastro e criar a logica do codigo para a criacao do usuario:
 
- - Passo 2: Devemos instalar o bootstrap do eslint as configuracoes de fato e o que desejamos que ele faca na nossa aplicacao para isso rodamos:
- ```
-  yarn eslint --init
- ```
- Sera apresentado uma lista de perguntas para setar as configuracoes:
-  - Na primeira pergunta deve ser selecionada a terceira opcao
-  - Devemos selecionar a opcao de import/export se estiver utilizando no projeto
-  - Nesse projeto nao estamos utilizando o nem React e Vue.js, por isso selecionei a terceira opcao
-  - O projeto esta usando TypeScript, por isso selecionei YES
-  - Devemos selecionar que o projeto esta rodando no node
-  - Selecionar o guide popular
-  - Seleciono a opcao do standard
-  - Tipo do arquivo eslint vamos utilizar o json
- 
- No final sera aprensentado a opcao de instalar varias bibliotecas que o eslint selecionou para instalar com o npm, como nesse projeto estamos utilizando o yarn, seleciono o opcao NO, copio as bibliotecas menos a do eslint que ja foi instalado, e rodo no yarn com o yarn add -D.
+  - Precisamos cryptografar a senha que o usuario digita na aplicacao, para isso vamos usar o bcryptjs, o codigo de instalacao fica assim:
+  ```
+    yarn add bcryptjs
+    yarn add @types/bcryptjs -D 
+  ```
 
- - Passo 3: Devemos colocar uma configuracao no settings.json para que quando salvar o ESlint arrume o codigo:
- ```
- "eslint.codeActionsOnSave.mode": "all",
- ```
+  - Assim que tiver instalado o bcryptjs devemos criar um metodo dentro do model de usuarios ficando assim o codigo:
+
+  ```
+    @BeforeInsert()
+    @BeforeUpdate()
+    hashPassword() {
+      this.password = bcrypt.hashSync(this.password, 8);
+    }
+  ```
+
+  - Importamos o BeforeInsert e o BeforeUpdate, para que seja criptografado antes de inserir no banco e antes de atualizar no banco.
+
+  - Agora devemos apagar o dado que esta no banco e criar um novo para poder usar os mesmos dados e testar se a criptografia esta funcionando.
+
+  - O codigo do controller para criacao de um usuario deve ficar assim por enquanto:
+  ```
+    import { Request, Response } from 'express';
+    // Usando o getRepository para conseguir usar o model de usuario aqui no controller
+    import { getRepository } from 'typeorm'; 
+
+    import User from '../models/Users';
+
+    class UserController {
+      async store(req: Request, res: Response) {
+        // Criando a variavel que vai receber a funcao getRepository com o model de usuario
+        const repository = getRepository(User);  
+        const { email, password } = req.body;
+
+        // Criando a verificacao para ver se o email que o cliente esta digitando ja existe no banco de dados
+        const userExists = await repository.findOne({ where: {email} });
+
+        if(userExists) {
+          return  res.sendStatus(409);
+        }
+
+        // Depois que passar pela verificacao e nao tiver um email igual ao que esta no banco de dados, vamos registrar os dados no banco.
+        const user = repository.create({ email, password });
+        // Usando o async await para salvar os dados do usuario no banco de dados
+        await repository.save(user);
+
+        return res.json(user);
+      }
+    }
+
+    export default new UserController();
+  ```
+
+**Criando a rota de autenticacao**
+
+  - Devemos criar o controller para a rota de autenticacao, podemos nesse caso apenas duplicar a rota de criacao e alterar as funcoes e os nomes de UserController para AuthController, pois as importacoes sao praticamente as mesmas.
+
+  - Para verificarmos se a senha que o usuario digitou e a mesma que esta no cadastro dele no banco, devemos comecar importando o bcryptjs.
+
+  - Criar a validacao do password digitado pelo usuario com o que esta na base de dados, se for validado e for igual os passwords devemos retornar um tokken jwt para o usuario, senao retorna um erro 401. Para retornar o tokken devemos instalar a seguinte biblioteca:
+    ```sh 
+    ❯  yarn add jsonwebtoken
+    ❯ yarn add @types/jsonwebtoken -D
+    ```
+
+  - Assim que terminar a instalacao do jsonwebtoken devemos importar o jwt no controller de autenticacao, ficando assim o codigo de importacao:
+    ```
+      import jwt from 'jsonwebtoken';
+    ```
+
+  - Depois devemos criar a variavel  para iniciar o jwt e gerar o tokken que vai manter o usuario conectado na aplicacao.
+
+  - O codigo de autenticacao deve ficar assim, no caso desse projeto. Como e um projeto teste para fins educativos o tratamento do token foi bem basico, mas para gerar um token em um projeto real, este token deve estar em um arquivo .env:
+    ```
+      const token = jwt.sign({ id: user.id }, 'secret' , { expiresIn: '1d' });
+
+      return res.json({
+        user,
+        token,
+      });
+    ```
+
+  - Apos a cricao do token e a logica, devemos criar a rota de autenticacao de fato no arquivo routes.ts, a rota ficara assim:
+    ```
+      router.post('/auth', AuthController.authenticate);
+    ```
+
+  - Rodamos no insomnia para ver se esta retornando o tokken o os dados da rota auth, nao e legal mostrarmos a password do usuario na requisicao do front.Para isso vamos usar a seguinte linha de codigo para que nao seja enviada a senha na rota de autenticacao:
+    ```
+      delete user.password;
+    ```
+  
+**Criando o midleware de atutenticacao**
+  - Os middlewares servem para aplicarmos a regra de autenticacao da aplicacao e como o usuario vai ficar com o token enquanto navega na aplicacao.
+  - Para comecar devemos criar uma pasta dentro do app, com o nome de middlewares: 
+
+  - Dentro da pasta de middlewares devemos criar o arquivo para autenticacao: 
+
+  - O codigo para o middleware de autenticacao deve ficar assim nesse caso:
+    ```
+      import { Request, Response, NextFunction} from 'express'; 
+      import jwt from 'jsonwebtoken';
+
+      export default function authMiddleware(req: Request, res: Response, next:NextFunction) {
+        const { authorization } = req.headers;
+
+        if(!authorization) {
+          return res.sendStatus(401);
+        }
+
+        const token = authorization.replace('Bearer', '').trim();
+
+        try {
+          const data = jwt.verify(token, 'secret');
+        } catch {
+          return res.sendStatus(401);
+        }
+      }
+    ```
+  
+  - Devemos criar no arquivo de rotas uma rota para listagem usando o middleware de autenticacao para ver se a regra esta funcionando e o codigo esta certo, assim testando que o usuario com o token autenticado apenas, podera ver a lista de usuarios. Para que seja criada a rota de listagem com o token precisamos criar como vai funcionar a rota nos controllers de usuarios. O codigo para criacao da rota no arquivo routes.ts ficara assim:
+    ```
+      import authMiddleware from './app/middlewares/authMiddleware';
+
+      router.get('/users', authMiddleware, UserController.index);
+    ```
+  
+  - A criacao do rota e bem simples e devera ficar assim por enquanto apenas para testar se a autenticacao esta funcionando:
+    ```
+      index(req: Request, res: Response) {
+      return res.send('ok')
+    }
+    ```
+
+  - Nesse caso precismos criar um tipo personalizado do express para poder salvar a id do usuario dentro da requisicao, para isso vamos criar uma pasta @types, e dentro dela o arquivo express.d.ts para criar esse tipo. Para a criacao do userId dentro do Request nos vamos pegar o que ja tem no request e apenas adicionar o userId do tipo string, o codigo deve ficar assim:
+    ```
+      declare namespace Express {
+        export interface Request {
+          userId: string;
+        }
+      }
+    ```
+  
+### Finalizada a criacao da API de Autenticacao
+  - Finalizando a API, e agora devemos continuar com  a criacao do front-end para essa api e testar as rotas de autenticacao com o front end, e depois fazer o deploy da aplicacao.
+
+  Devemos ler, revisar e estudar muito em cima desse codigo para que isso fique com o foco total na cabeca, foi incrivel esse aprendizado junto ao video do Mateus Silva: https://www.youtube.com/watch?v=TjAXBLszCb0&t=2018s.
+
+  Valeu 🖖🏼 🤙🏻 !
+
+  
+
+
+  
+
+
 
 
